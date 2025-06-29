@@ -1,5 +1,8 @@
+const user = require("../models/user");
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 const signUp = async (req, res) => {
   try {
@@ -61,13 +64,60 @@ const signUp = async (req, res) => {
 // login function
 const login = async (req, res) => {
   try {
+    const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(500).json({
+        success: false,
+        message: "enter valid credentials",
+      });
+    }
 
+    const userData = await user.findOne({ email });
+    console.log(userData)
+    if (!userData) {
+      return res.status(401).json({
+        success: false,
+        message: "no user found",
+      });
+    }
 
+    console.log(password)
+    console.log(userData.password)
+    const isCorrect = await bcrypt.compare(password, userData.password);
+    if (!isCorrect) {
+      return res.status(401).json({
+        success: false,
+        message: "wrong password",
+      });
+    }
 
+    // token creation
+    // token(payload, secret key, options)
+    const payload = {
+      id: userData._id,
+      email: userData.email,
+      role: userData.role,
+    };
+    const token = jwt.sign(payload, process.env.SECRET_KEY, {
+      expiresIn: "1d",
+    });
 
+    // cookie creation
+    // cookie(name, value, options)
+    res.cookie("token", token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }); // 1 day
+
+    return res.status(200).json({
+      success: true,
+      message: "logged in",
+      user: {
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+      },
+    });
   } catch (e) {
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
       data: e.message,
       message: "login failed",
