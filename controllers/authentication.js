@@ -74,7 +74,6 @@ const login = async (req, res) => {
     }
 
     const userData = await user.findOne({ email });
-    console.log(userData)
     if (!userData) {
       return res.status(401).json({
         success: false,
@@ -82,8 +81,6 @@ const login = async (req, res) => {
       });
     }
 
-    console.log(password)
-    console.log(userData.password)
     const isCorrect = await bcrypt.compare(password, userData.password);
     if (!isCorrect) {
       return res.status(401).json({
@@ -94,7 +91,7 @@ const login = async (req, res) => {
 
     // token creation
     // token(payload, secret key, options)
-    const payload = {
+    const payload = { 
       id: userData._id,
       email: userData.email,
       role: userData.role,
@@ -105,7 +102,7 @@ const login = async (req, res) => {
 
     // cookie creation
     // cookie(name, value, options)
-    res.cookie("token", token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }); // 1 day
+    // res.cookie("token", token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }); // 1 day
 
     return res.status(200).json({
       success: true,
@@ -114,6 +111,7 @@ const login = async (req, res) => {
         name: userData.name,
         email: userData.email,
         role: userData.role,
+        token,
       },
     });
   } catch (e) {
